@@ -1,0 +1,12 @@
+# Tested on Python 3.11 and 3.13 (Nov 2026). Pin exact versions in a lock file before production.
+pandas>=2.2,<4
+numpy>=1.26,<3
+pyarrow>=15
+duckdb>=1.0,<3
+requests>=2.31,<3
+pyyaml>=6,<7
+plotly>=5.20,<8
+networkx>=3.2,<4
+ruptures>=1.1,<2
+streamlit>=1.40,<2
+pytest>=8
