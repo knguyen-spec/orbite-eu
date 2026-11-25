@@ -17,28 +17,96 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE if (HERE / "orbite").is_dir() else HERE.parent  # works from app/ or from the repo root
 sys.path.insert(0, str(ROOT))
 
-from orbite import METHOD_VERSION, brief, detect, store  # noqa: E402
+from orbite import METHOD_VERSION, brief, detect, evaluate, store, synthetic  # noqa: E402
 
 st.set_page_config(page_title="Orbite", page_icon="🪐", layout="wide")
 
 INK, IA, REGLE, HUMAIN, OK = "#121833", "#6B3FD6", "#3F57D9", "#8F5308", "#11795A"
 PLANS = {"Public": 0, "Signal": 1, "Expert": 2}
 DEMO_CODES = {"Signal": "signal-demo", "Expert": "expert-demo"}
+NAMES = ["figures", "posts_scored", "followers_scored", "comment_patterns", "stance", "reposts", "bursts", "metrics", "attention"]
+
+# Real snapshot: LCP list of declared and potential candidates, read 25 Nov 2026.
+# Kept inside the app so the Public tab works even if data/ is missing from the repo.
+CENSUS = [
+    ("Expected on the starting line", "Nathalie Arthaud", "Lutte ouvrière", ""),
+    ("Expected on the starting line", "Jean-Luc Mélenchon", "La France insoumise", ""),
+    ("Expected on the starting line", "Fabien Roussel", "PCF", ""),
+    ("Expected on the starting line", "Raphaël Glucksmann", "Place publique", "Won the social-democrat primary in Oct 2026"),
+    ("Expected on the starting line", "Eric Zemmour", "Reconquête", ""),
+    ("Expected on the starting line", "Marine Le Pen", "Rassemblement national", "Candidacy depends on the Court of Cassation ruling on her appeal"),
+    ("Expected on the starting line", "Dominique de Villepin", "La France humaniste", "Declared 20 Nov 2026"),
+    ("Centre and right, run not yet certain", "Gabriel Attal", "Renaissance", ""),
+    ("Centre and right, run not yet certain", "Édouard Philippe", "Horizons", ""),
+    ("Centre and right, run not yet certain", "Bruno Retailleau", "Les Républicains", ""),
+    ("Centre and right, run not yet certain", "David Lisnard", "Nouvelle Énergie", ""),
+    ("Left, not yet confirmed", "Marine Tondelier", "Les Écologistes", "Party vote on 13 Dec"),
+    ("Other announced candidacies", "Nicolas Dupont-Aignan", "Debout la France", ""),
+    ("Other announced candidacies", "Florian Philippot", "Les Patriotes", ""),
+    ("Other announced candidacies", "François Asselineau", "UPR", ""),
+    ("Other announced candidacies", "Selma Labib", "NPA-Révolutionnaires", ""),
+    ("Other announced candidacies", "Mira Markovic", "Parti animaliste", ""),
+    ("Other announced candidacies", "Jean Lassalle", "Résistons", ""),
+    ("Other announced candidacies", "Francis Lalanne", "France Libre", ""),
+    ("Other announced candidacies", "Anasse Kazib", "Révolution permanente", ""),
+    ("Other announced candidacies", "Natacha Polony", "Civil society", ""),
+    ("Other announced candidacies", "Teddy Riner", "Civil society", ""),
+    ("Considering a run", "Xavier Bertrand", "Les Républicains", "Expected to decide by end of 2026"),
+    ("Considering a run", "François Hollande", "", "Plans to wait until January"),
+    ("Considering a run", "Thierry Breton", "", ""),
+    ("Considering a run", "Élisabeth Borne", "", ""),
+    ("Considering a run", "Bruno Le Maire", "", ""),
+    ("Considering a run", "Christine Lagarde", "", ""),
+    ("Considering a run", "Matthieu Pigasse", "", ""),
+]
 
 
 # ---------- data ----------
+@st.cache_data(show_spinner="Building the synthetic demo data (first load only)…")
+def build_sample() -> dict:
+    """Same pipeline as scripts/make_synthetic.py, run in memory when data/sample is missing."""
+    d = synthetic.generate()
+    posts = detect.engagement_flags(d["posts"])
+    followers = detect.follower_steps(d["followers"], posts)
+    patterns = detect.comment_patterns(d["comments"])
+    bursts = detect.repost_bursts(d["reposts"])
+    metrics = evaluate.score(d["labels"], {"engagement_spike": posts, "bought_followers": followers, "comment_pod": patterns,
+                                           "coordinated_burst": bursts.assign(signal=bursts["same_text_share"] >= 0.5)})
+    out = {"figures": d["figures"], "posts_scored": posts, "followers_scored": followers, "comment_patterns": patterns,
+           "stance": detect.stance_counts(d["comments"]), "reposts": d["reposts"], "bursts": bursts, "metrics": metrics,
+           "attention": None}
+    for name, df in out.items():  # save for next time when the disk allows it; never fail on this
+        if df is not None:
+            try:
+                store.write(df, name, "sample")
+            except Exception:
+                pass
+    return out
+
+
 @st.cache_data(ttl=3600)
 def load(mode: str) -> dict:
-    names = ["figures", "posts_scored", "followers_scored", "comment_patterns", "stance", "reposts", "bursts", "metrics", "attention"]
-    return {n: store.read(n, mode) for n in names}
+    data = {}
+    for n in NAMES:
+        try:
+            data[n] = store.read(n, mode)
+        except Exception:
+            data[n] = None
+    if mode == "sample" and data.get("posts_scored") is None:
+        data = build_sample()
+    return data
 
 
 @st.cache_data
 def census() -> pd.DataFrame:
-    return pd.read_csv(ROOT / "data" / "census_2026-11-25.csv").fillna("")
+    for p in (ROOT / "data" / "census_2026-11-25.csv", HERE / "data" / "census_2026-11-25.csv", HERE / "census_2026-11-25.csv"):
+        if p.exists():
+            return pd.read_csv(p).fillna("")
+    return pd.DataFrame(CENSUS, columns=["group", "name", "party", "note"])
 
 
 def codes() -> dict:
