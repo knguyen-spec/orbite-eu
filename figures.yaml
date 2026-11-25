@@ -1,0 +1,31 @@
+# Public figures Orbite follows on live data.
+#
+# Rules (docs/ETHICS.md):
+#  - Official accounts of public figures only. Never add private individuals.
+#  - Fill youtube_channel_id / bluesky_handle ONLY after a human confirms them
+#    (run `python scripts/resolve_accounts.py` for Wikidata suggestions).
+#  - Same list and same method for every political side.
+#
+# wikipedia_fr feeds the free public-attention index (no key needed).
+# Starting list: candidates LCP listed as "expected on the starting line" or
+# centre/right possible, read 25 Nov 2026. Order follows that source, not polls.
+
+figures:
+  - {id: arthaud,    name: "Nathalie Arthaud",     wikipedia_fr: "Nathalie Arthaud",     youtube_channel_id: "", bluesky_handle: ""}
+  - {id: melenchon,  name: "Jean-Luc Mélenchon",   wikipedia_fr: "Jean-Luc Mélenchon",   youtube_channel_id: "", bluesky_handle: ""}
+  - {id: roussel,    name: "Fabien Roussel",       wikipedia_fr: "Fabien Roussel",       youtube_channel_id: "", bluesky_handle: ""}
+  - {id: glucksmann, name: "Raphaël Glucksmann",   wikipedia_fr: "Raphaël Glucksmann",   youtube_channel_id: "", bluesky_handle: ""}
+  - {id: zemmour,    name: "Éric Zemmour",         wikipedia_fr: "Éric Zemmour",         youtube_channel_id: "", bluesky_handle: ""}
+  - {id: lepen,      name: "Marine Le Pen",        wikipedia_fr: "Marine Le Pen",        youtube_channel_id: "", bluesky_handle: ""}
+  - {id: villepin,   name: "Dominique de Villepin",wikipedia_fr: "Dominique de Villepin",youtube_channel_id: "", bluesky_handle: ""}
+  - {id: attal,      name: "Gabriel Attal",        wikipedia_fr: "Gabriel Attal",        youtube_channel_id: "", bluesky_handle: ""}
+  - {id: philippe,   name: "Édouard Philippe",     wikipedia_fr: "Édouard Philippe",     youtube_channel_id: "", bluesky_handle: ""}
+  - {id: retailleau, name: "Bruno Retailleau",     wikipedia_fr: "Bruno Retailleau",     youtube_channel_id: "", bluesky_handle: ""}
+  - {id: lisnard,    name: "David Lisnard",        wikipedia_fr: "David Lisnard",        youtube_channel_id: "", bluesky_handle: ""}
+
+settings:
+  attention_days: 120          # Wikipedia history pulled on each run (free)
+  youtube_videos_per_figure: 50
+  youtube_comments_per_flag: 300
+  youtube_quota_budget: 9000   # stay under the 10,000 units/day default
+  bluesky_posts_per_figure: 100
